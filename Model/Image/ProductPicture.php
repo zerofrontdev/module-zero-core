@@ -31,8 +31,9 @@ use Psr\Log\LoggerInterface;
 class ProductPicture implements ArgumentInterface
 {
     /** Widths offered for a product card (listings, widgets) and for the product page gallery. */
-    public const CARD_WIDTHS = [300, 600];
-    public const GALLERY_WIDTHS = [700, 1400];
+    public const CARD_WIDTHS = [300, 400, 600];
+    // 828 and 1080: phones (a 412 px screen at 1.75x needs 721 px and took the 1400 copy, 300 KB of WebP).
+    public const GALLERY_WIDTHS = [700, 828, 1080, 1400];
 
     private const DIR = 'zero/product';
     private const JPEG_QUALITY = 82;
@@ -83,7 +84,12 @@ class ProductPicture implements ArgumentInterface
         }
         $media = $this->filesystem->getDirectoryWrite(DirectoryList::MEDIA);
         $source = $media->getAbsolutePath('catalog/product/' . $file);
-        $size = @getimagesize($source);
+        try {
+            $size = getimagesize($source);
+        } catch (\Throwable) {
+            // Magento turns PHP's warning on a broken file into an exception.
+            $size = false;
+        }
         if (!$size) {
             return null;
         }
@@ -161,7 +167,11 @@ class ProductPicture implements ArgumentInterface
             return true;
         }
 
-        $original = @imagecreatefromstring((string) file_get_contents($source));
+        try {
+            $original = imagecreatefromstring((string) file_get_contents($source));
+        } catch (\Throwable) {
+            $original = false;
+        }
         if (!$original) {
             return false;
         }

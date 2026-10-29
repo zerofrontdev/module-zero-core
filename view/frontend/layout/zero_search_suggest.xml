@@ -2,7 +2,7 @@
 <layout xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/layout_generic.xsd">
     <body>
-        <block class="Magento\Framework\View\Element\Template" name="zero.search.suggest" cacheable="false"
+        <block class="Zero\Core\Block\Search\Suggest" name="zero.search.suggest"
                template="Zero_Core::search/suggest.phtml">
             <arguments>
                 <argument name="viewModel" xsi:type="object">Zero\Core\ViewModel\SearchSuggest</argument>

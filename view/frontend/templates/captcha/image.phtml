@@ -18,8 +18,8 @@ $captcha = $block->getCaptchaModel();
 $imgHeight = (float) $block->getImgHeight();
 ?>
 <div class="field captcha no-label"
-     data-captcha="<?= $formId ?>"
-     id="captcha-container-<?= $formId ?>">
+     data-captcha="<?= /* @noEscape */ $formId ?>"
+     id="captcha-container-<?= /* @noEscape */ $formId ?>">
     <div class="control captcha-image">
         <img alt="<?= $block->escapeHtmlAttr(__('Please type the letters and numbers below')) ?>"
              class="captcha-img"
@@ -34,7 +34,7 @@ $imgHeight = (float) $block->getImgHeight();
                         ['_query' => ['form_id' => $block->getFormId(), 'img_height' => $imgHeight]]
                     )
                 ) ?>"
-                hx-target="#captcha-container-<?= $formId ?>"
+                hx-target="#captcha-container-<?= /* @noEscape */ $formId ?>"
                 hx-swap="outerHTML">
             <span><?= $block->escapeHtml(__('Reload captcha')) ?></span>
         </button>

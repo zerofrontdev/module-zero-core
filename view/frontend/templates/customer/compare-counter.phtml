@@ -16,5 +16,5 @@ $count = $viewModel->getItemCount();
       hx-get="<?= $escaper->escapeUrl($block->getUrl('zero/customer/comparecounter')) ?>"
       hx-trigger="compare:updated from:body"
       hx-swap="outerHTML">
-    <?= $count > 0 ? $escaper->escapeHtml($count === 1 ? __('%1 item', $count) : __('%1 items', $count)) : '' ?>
+    <?= $escaper->escapeHtml($count > 0 ? ($count === 1 ? __('%1 item', $count) : __('%1 items', $count)) : '') ?>
 </span>

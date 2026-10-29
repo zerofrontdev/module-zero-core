@@ -40,4 +40,14 @@
     <type name="Magento\Store\Model\StoreResolver">
         <plugin name="zero_store_path_prefix" type="Zero\Core\Plugin\Store\StorePathPrefix"/>
     </type>
+    <!--
+        A website on its own domain (MAGE_RUN_TYPE=website): its own default store
+        view is the guest's default, or every page sets X-Magento-Vary and Varnish
+        caches none of them. See Plugin\Framework\App\WebsiteDefaultContext.
+        Global, not frontend: the HTTP context object is made before the frontend
+        area's configuration is loaded, so a frontend plugin never reaches it.
+    -->
+    <type name="Magento\Framework\App\Http\Context">
+        <plugin name="zero_core_website_default_context" type="Zero\Core\Plugin\Framework\App\WebsiteDefaultContext"/>
+    </type>
 </config>

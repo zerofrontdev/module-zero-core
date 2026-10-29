@@ -8,7 +8,7 @@ declare(strict_types=1);
 
 namespace Zero\Core\Controller\Search;
 
-use Zero\Core\Controller\PrivateFragmentActionInterface;
+use Magento\Framework\App\Action\HttpGetActionInterface;
 use Magento\Framework\View\Result\Layout;
 use Magento\Framework\View\Result\LayoutFactory;
 
@@ -17,9 +17,12 @@ use Magento\Framework\View\Result\LayoutFactory;
  * replacing stock's `quickSearch` widget (not run on this theme). Same data
  * source as stock's `search/ajax/suggest` (see ViewModel\SearchSuggest).
  *
- * A private fragment: the response varies by `q`, so it must not be FPC-cached.
+ * Full page cached, per query (the URL) and per customer group and currency
+ * (the vary cookie), like the results page: 0.6 s a keystroke uncached on a
+ * 100 000-product catalogue. Block\Search\Suggest tags it with the products
+ * it shows. Nothing in it is the visitor's own.
  */
-class Suggest implements PrivateFragmentActionInterface
+class Suggest implements HttpGetActionInterface
 {
     private const BLOCK_NAME = 'zero.search.suggest';
 

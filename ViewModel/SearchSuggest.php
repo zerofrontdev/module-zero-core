@@ -40,6 +40,11 @@ class SearchSuggest implements ArgumentInterface
     private const IMAGE_DISPLAY_AREA = 'mini_cart_product_thumbnail';
 
     /**
+     * @var string[] the shown products' cache tags (Block\Search\Suggest)
+     */
+    private array $identities = [];
+
+    /**
      * $fulltextCollectionFactory is typed as the real Product\CollectionFactory:
      * the Fulltext CollectionFactory is a virtualType, which di:compile can't
      * reflect. etc/frontend/di.xml injects the virtual instance by name.
@@ -164,6 +169,7 @@ class SearchSuggest implements ArgumentInterface
 
         $products = [];
         foreach ($collection as $product) {
+            $this->identities = [...$this->identities, ...$product->getIdentities()];
             $products[] = [
                 'name' => (string) $product->getName(),
                 'url' => (string) $product->getProductUrl(),
@@ -176,5 +182,15 @@ class SearchSuggest implements ArgumentInterface
         }
 
         return $products;
+    }
+
+    /**
+     * Cache tags of the products getMatchingProducts() returned.
+     *
+     * @return string[]
+     */
+    public function getIdentities(): array
+    {
+        return array_values(array_unique($this->identities));
     }
 }

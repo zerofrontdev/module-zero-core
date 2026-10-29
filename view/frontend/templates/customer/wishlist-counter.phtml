@@ -17,5 +17,5 @@ $isVisible = $viewModel->isEnabled() && $count > 0;
       hx-get="<?= $escaper->escapeUrl($block->getUrl('zero/customer/wishlistcounter')) ?>"
       hx-trigger="wishlist:updated from:body"
       hx-swap="outerHTML">
-    <?= $isVisible ? $escaper->escapeHtml($count === 1 ? __('%1 item', $count) : __('%1 items', $count)) : '' ?>
+    <?= $escaper->escapeHtml($isVisible ? ($count === 1 ? __('%1 item', $count) : __('%1 items', $count)) : '') ?>
 </span>

@@ -14,6 +14,7 @@ use Magento\Catalog\Model\Category;
 use Magento\Catalog\Model\Product\ImageFactory;
 use Magento\Catalog\Model\Product\Visibility;
 use Magento\Catalog\Model\ResourceModel\Category\CollectionFactory as CategoryCollectionFactory;
+use Magento\Framework\App\ResourceConnection;
 use Magento\Catalog\Model\ResourceModel\Product\Collection as ProductCollection;
 use Magento\Catalog\Model\ResourceModel\Product\CollectionFactory as ProductCollectionFactory;
 use Magento\Framework\Pricing\Helper\Data as PricingHelper;
@@ -27,7 +28,7 @@ use Zero\Core\Model\Pricing\CachedPrices;
  * promotional sections' images and links, per Model\Homepage\Settings.
  * - Shortlist: one product per department (a flat sort gave four alike);
  *   "Featured", since bestseller data is often empty.
- * - New arrivals: created_at DESC, minus the excluded categories.
+ * - New arrivals: the newest (entity_id DESC), minus the excluded categories.
  */
 class FeaturedProducts implements ArgumentInterface
 {
@@ -55,7 +56,6 @@ class FeaturedProducts implements ArgumentInterface
     private const SRCSET_SIZES = '(min-width: 768px) 50vw, 100vw';
 
     /** @var array<string, string> category ids => the most specific one's name, avoids re-loading per product */
-    private array $categoryNameCache = [];
 
     /** @var array<int, array>|null the shortlist's tiles, once built */
     private ?array $shortlist = null;
@@ -77,6 +77,7 @@ class FeaturedProducts implements ArgumentInterface
     public function __construct(
         private readonly ProductCollectionFactory $productCollectionFactory,
         private readonly CategoryCollectionFactory $categoryCollectionFactory,
+        private readonly ResourceConnection $resource,
         private readonly ImageHelper $imageHelper,
         private readonly PricingHelper $pricingHelper,
         private readonly ImageFactory $productImageFactory,
@@ -326,8 +327,10 @@ class FeaturedProducts implements ArgumentInterface
         if ($this->newArrivals !== null) {
             return $this->newArrivals;
         }
+        // Newest by id, the order products were created in: created_at has no index, and on 100 000 products
+        // sorting by it took 1.3 s an uncached homepage under load (17 ms by id).
         $collection = $this->baseCollection()
-            ->setOrder('created_at', ProductCollection::SORT_ORDER_DESC)
+            ->setOrder('entity_id', ProductCollection::SORT_ORDER_DESC)
             ->setPageSize(self::SLIDER_SIZE);
 
         return $this->newArrivals = $this->buildTiles(
@@ -379,6 +382,8 @@ class FeaturedProducts implements ArgumentInterface
             // them cached the regular price as final: no Sale badge anywhere for a day).
             ->addAttributeToSelect(['name', 'price', 'special_price', 'special_from_date', 'special_to_date', 'small_image'])
             ->addAttributeToFilter('type_id', ['in' => ['simple', 'configurable']])
+            // The tiles' URLs with the products, not a url_rewrite lookup each.
+            ->addUrlRewrite()
             ->setPageSize(self::GRID_SIZE);
     }
 
@@ -393,12 +398,14 @@ class FeaturedProducts implements ArgumentInterface
     private function buildTiles(iterable $products, callable $badgeResolver): array
     {
         $tiles = [];
-        foreach (array_values(is_array($products) ? $products : iterator_to_array($products)) as $index => $product) {
+        $products = array_values(is_array($products) ? $products : iterator_to_array($products));
+        $labels = $this->categoryNames($products);
+        foreach ($products as $index => $product) {
             /** @var ProductInterface&\Magento\Catalog\Model\Product $product */
             $tiles[] = [
                 'product' => $product,
                 'badge' => $badgeResolver($index),
-                'label' => $this->firstCategoryName($product),
+                'label' => $labels[(int) $product->getId()] ?? '',
                 'image' => $this->imageHelper->init($product, self::IMAGE_DISPLAY_AREA)->getUrl(),
                 'name' => (string) $product->getName(),
                 // The price box's amount from the block cache: a configurable's
@@ -412,34 +419,51 @@ class FeaturedProducts implements ArgumentInterface
     }
 
     /**
-     * The name of the product's most specific category, cached per set of ids (at most 8
-     * products per render).
+     * The name of each product's most specific category ("Jackets", not the
+     * store's root or a catch-all such as "What's New"), in two queries for the
+     * whole set: the products' category ids, then those categories' names.
      *
-     * @param ProductInterface $product
-     * @return string
+     * @param ProductInterface[] $products
+     * @return array<int, string> product id => name
      */
-    private function firstCategoryName(ProductInterface $product): string
+    private function categoryNames(array $products): array
     {
-        /** @var \Magento\Catalog\Model\Product $product */
-        $categoryIds = array_map('intval', $product->getCategoryIds());
-        if (!$categoryIds) {
-            return '';
+        $ids = array_values(array_unique(array_map(static fn (ProductInterface $product) => (int) $product->getId(), $products)));
+        if (!$ids) {
+            return [];
         }
-        $key = implode(',', $categoryIds);
-        if (!isset($this->categoryNameCache[$key])) {
-            // The most specific one ("Jackets"), not the first by id: that is often
-            // the store's root or a catch-all such as "What's New".
-            $category = $this->categoryCollectionFactory->create()
-                ->addAttributeToSelect('name')
-                ->addFieldToFilter('entity_id', ['in' => $categoryIds])
-                ->addFieldToFilter('level', ['gt' => 1])
-                ->setOrder('level', 'DESC')
-                ->setOrder('entity_id', 'ASC')
-                ->setPageSize(1)
-                ->getFirstItem();
-            $this->categoryNameCache[$key] = (string) $category->getName();
+        $connection = $this->resource->getConnection();
+        $byProduct = [];
+        foreach ($connection->fetchAll(
+            $connection->select()
+                ->from($this->resource->getTableName('catalog_category_product'), ['product_id', 'category_id'])
+                ->where('product_id IN (?)', $ids)
+        ) as $row) {
+            $byProduct[(int) $row['product_id']][] = (int) $row['category_id'];
+        }
+        if (!$byProduct) {
+            return [];
+        }
+        $names = [];
+        $categories = $this->categoryCollectionFactory->create()
+            ->addAttributeToSelect('name')
+            ->addFieldToFilter('entity_id', ['in' => array_unique(array_merge(...array_values($byProduct)))])
+            ->addFieldToFilter('level', ['gt' => 1])
+            ->setOrder('level', 'DESC')
+            ->setOrder('entity_id', 'ASC');
+        foreach ($categories as $category) {
+            $names[(int) $category->getId()] = (string) $category->getName();
+        }
+        $result = [];
+        foreach ($byProduct as $productId => $categoryIds) {
+            foreach ($names as $categoryId => $name) {
+                if (in_array($categoryId, $categoryIds, true)) {
+                    $result[$productId] = $name;
+                    break;
+                }
+            }
         }
 
-        return $this->categoryNameCache[$key];
+        return $result;
     }
 }
