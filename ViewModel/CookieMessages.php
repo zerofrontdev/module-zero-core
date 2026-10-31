@@ -39,7 +39,8 @@ class CookieMessages implements ArgumentInterface
     public function getMessages(): array
     {
         $raw = $this->cookieManager->getCookie(self::COOKIE_NAME);
-        if (!$raw) {
+        // A cookie sent as an array (mage-messages[a]=1) counts as none.
+        if (!$raw || !is_string($raw)) {
             return [];
         }
 
@@ -58,6 +59,21 @@ class CookieMessages implements ArgumentInterface
             $this->cookieMetadataFactory->createPublicCookieMetadata()->setPath('/')
         );
 
-        return $messages;
+        // The cookie is client-controllable: only {type, text} with text values are kept, so
+        // [{"type":["x"]}] can't break the template with "Array to string conversion".
+        $kept = [];
+        foreach ($messages as $message) {
+            if (!is_array($message)) {
+                continue;
+            }
+            $type = $message['type'] ?? 'notice';
+            $text = $message['text'] ?? '';
+            $kept[] = [
+                'type' => is_scalar($type) ? (string) $type : 'notice',
+                'text' => is_scalar($text) ? (string) $text : '',
+            ];
+        }
+
+        return $kept;
     }
 }

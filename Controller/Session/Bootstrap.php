@@ -38,7 +38,16 @@ class Bootstrap implements PrivateFragmentActionInterface
         'cartcounter' => ['zero_checkout_cartcounter', 'zero.checkout.cartcounter'],
         'wishlistcounter' => ['zero_customer_wishlistcounter', 'zero.customer.wishlistcounter'],
         'comparecounter' => ['zero_customer_comparecounter', 'zero.customer.comparecounter'],
+        // The sidebar's Compare Products / My Wish List (category pages): no request of its own (2026-10-31).
+        'sidebar' => ['zero_customer_sidebar', 'zero.customer.sidebar'],
     ];
+
+    /**
+     * Fragments whose block always renders something (the sidebar's wrapper). An empty one means the
+     * block threw: Layout::renderNonCachedElement logs it and returns '' outside developer mode. It is
+     * left out of the answer, so session.js does not keep it for 20 minutes and the next page asks again.
+     */
+    private const NEVER_EMPTY = ['sidebar'];
 
     public function __construct(
         private readonly ResultFactory $resultFactory,
@@ -70,7 +79,10 @@ class Bootstrap implements PrivateFragmentActionInterface
             }
             $layout = $resultLayout->getLayout();
             foreach ($names as $name) {
-                $html[$name] = (string) $layout->renderElement(self::FRAGMENTS[$name][1]);
+                $fragment = (string) $layout->renderElement(self::FRAGMENTS[$name][1]);
+                if ($fragment !== '' || !in_array($name, self::NEVER_EMPTY, true)) {
+                    $html[$name] = $fragment;
+                }
             }
         }
 

@@ -65,7 +65,8 @@ class Cancel implements HttpPostActionInterface
             return $this->refuse($redirect->setPath('sales/order/history'));
         }
         $reasons = $this->config->getCancellationReasons($order->getStore());
-        $reason = $reasons[(string) $this->request->getParam('reason')] ?? null;
+        $reasonParam = $this->request->getParam('reason');
+        $reason = $reasons[is_scalar($reasonParam) ? (string) $reasonParam : ''] ?? null;
         if (!$this->config->isOrderCancellationEnabledForStore((int) $order->getStoreId())
             || !$this->customerCanCancel->execute($order)
             || $reason === null

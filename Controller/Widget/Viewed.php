@@ -53,7 +53,8 @@ class Viewed implements PrivateFragmentActionInterface
      */
     public function execute()
     {
-        $templateKey = (string) $this->request->getParam('template', 'grid');
+        $templateKey = $this->request->getParam('template', 'grid');
+        $templateKey = is_scalar($templateKey) ? (string) $templateKey : 'grid';
         $template = self::TEMPLATE_MAP[$templateKey] ?? self::TEMPLATE_MAP['grid'];
         $pageSize = max(1, (int) $this->request->getParam('page_size', 5));
 

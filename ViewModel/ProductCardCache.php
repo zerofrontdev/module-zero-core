@@ -23,6 +23,7 @@ use Magento\Framework\View\Element\BlockInterface;
 use Magento\Framework\App\Cache\Type\Block as BlockCache;
 use Magento\Store\Model\ScopeInterface;
 use Magento\Store\Model\StoreManagerInterface;
+use Zero\Core\Model\Catalog\SwatchImageParams;
 
 /**
  * Product list cards from the block cache, one entry per card, as Hyvä does:
@@ -32,7 +33,8 @@ use Magento\Store\Model\StoreManagerInterface;
  * Keyed by everything a card's HTML depends on: product, store, theme, the
  * HTTP context (customer group, currency, tax), the store's date (price rules,
  * "New"/"Sale"), the category (product URLs may carry it) and the list's view
- * settings. Cleaned with the product's cache tags. What belongs to the request
+ * settings, and for a configurable the swatch filters that pick its picture
+ * (?color=50 shows the red variant). Cleaned with the product's cache tags. What belongs to the request
  * stays out of the stored HTML: the form key (a token, put back on output)
  * and the caller's $replace placeholders (Add to Cart's URL, which carries the
  * current page). Off: Stores > Configuration > Zero > Theme > Performance.
@@ -56,7 +58,8 @@ class ProductCardCache implements ArgumentInterface
         private readonly CustomerSession $customerSession,
         private readonly TimezoneInterface $timezone,
         private readonly LayerResolver $layerResolver,
-        private readonly FormKey $formKey
+        private readonly FormKey $formKey,
+        private readonly SwatchImageParams $swatchImageParams
     ) {
     }
 
@@ -80,6 +83,7 @@ class ProductCardCache implements ArgumentInterface
             (int) $product->getId(),
             method_exists($list, 'getTemplateFile') ? (string) $list->getTemplateFile() : get_class($list),
             $vary,
+            $product->getTypeId() === 'configurable' ? $this->swatchImageParams->get() : [],
         ]));
         $html = $this->cache->load($key);
         if (!is_string($html) || $html === '') {

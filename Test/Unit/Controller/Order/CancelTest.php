@@ -137,6 +137,17 @@ class CancelTest extends TestCase
         $controller->execute();
     }
 
+    public function testAnArrayReasonIsRefusedLikeAnUnknownOne(): void
+    {
+        $request = $this->createMock(RequestInterface::class);
+        $request->method('getParam')->willReturnMap([['order_id', null, '42'], ['reason', null, ['a' => ['b' => '1']]]]);
+        $controller = $this->controllerWith(request: $request);
+        $this->cancelOrder->expects(self::never())->method('execute');
+        $this->messages->expects(self::once())->method('addErrorMessage');
+
+        $controller->execute();
+    }
+
     public function testAnOrderThatCannotBeCancelledAnyMoreIsRefused(): void
     {
         $canCancel = $this->createMock(CustomerCanCancel::class);

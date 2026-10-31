@@ -17,10 +17,10 @@ use Magento\Catalog\Model\ResourceModel\Category\CollectionFactory as CategoryCo
 use Magento\Framework\App\ResourceConnection;
 use Magento\Catalog\Model\ResourceModel\Product\Collection as ProductCollection;
 use Magento\Catalog\Model\ResourceModel\Product\CollectionFactory as ProductCollectionFactory;
-use Magento\Framework\Pricing\Helper\Data as PricingHelper;
 use Magento\Framework\View\Element\Block\ArgumentInterface;
 use Magento\Store\Model\StoreManagerInterface;
 use Zero\Core\Model\Homepage\Settings;
+use Zero\Core\Model\Pricing\Amounts;
 use Zero\Core\Model\Pricing\CachedPrices;
 
 /**
@@ -67,7 +67,7 @@ class FeaturedProducts implements ArgumentInterface
      * @param ProductCollectionFactory $productCollectionFactory
      * @param CategoryCollectionFactory $categoryCollectionFactory
      * @param ImageHelper $imageHelper
-     * @param PricingHelper $pricingHelper
+     * @param Amounts $amounts
      * @param ImageFactory $productImageFactory
      * @param StoreManagerInterface $storeManager
      * @param Visibility $visibility
@@ -79,7 +79,7 @@ class FeaturedProducts implements ArgumentInterface
         private readonly CategoryCollectionFactory $categoryCollectionFactory,
         private readonly ResourceConnection $resource,
         private readonly ImageHelper $imageHelper,
-        private readonly PricingHelper $pricingHelper,
+        private readonly Amounts $amounts,
         private readonly ImageFactory $productImageFactory,
         private readonly StoreManagerInterface $storeManager,
         private readonly Visibility $visibility,
@@ -410,7 +410,8 @@ class FeaturedProducts implements ArgumentInterface
                 'name' => (string) $product->getName(),
                 // The price box's amount from the block cache: a configurable's
                 // own final price is worked out from its variants, cold, ~10 ms.
-                'price' => $this->pricingHelper->currency($this->prices->get($product)['final'], true, false),
+                // Already in display currency: formatted, not converted again.
+                'price' => $this->amounts->format($this->prices->get($product)['final']),
                 'url' => $product->getProductUrl(),
             ];
         }

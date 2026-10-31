@@ -19,14 +19,16 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Zero\Core\Model\Compat\Registry;
+use Zero\Core\Model\Compat\TemplateCoverage;
 use Zero\Core\Model\Theme\FallbackRoutes;
 
 /**
  * Which enabled storefront modules are ready for the Zero theme: "Zero
  * styles" (own tailwind.css), "compat: X", "theme" (a Zero theme overrides
- * its templates), "Luma pages", or not covered, with a count of its Luma-only
- * JS (x-magento-init, data-mage-init, UI components). Magento's own modules
- * only with --all.
+ * its templates), "theme: templates" (it overrides every template the
+ * module's layouts use), "Luma pages", or not covered, with a count of its
+ * Luma-only JS (x-magento-init, data-mage-init, UI components). Magento's own
+ * modules only with --all.
  */
 class CompatReportCommand extends Command
 {
@@ -46,7 +48,8 @@ class CompatReportCommand extends Command
         private readonly ComponentRegistrarInterface $componentRegistrar,
         private readonly Registry $registry,
         private readonly ScopeConfigInterface $scopeConfig,
-        private readonly ThemeCollectionFactory $themeCollectionFactory
+        private readonly ThemeCollectionFactory $themeCollectionFactory,
+        private readonly TemplateCoverage $templateCoverage
     ) {
         parent::__construct();
     }
@@ -97,6 +100,9 @@ class CompatReportCommand extends Command
                 if (is_dir($themeDir . '/' . $moduleName)) {
                     $coveredBy[] = 'theme: ' . $themePath;
                 }
+            }
+            if (!$coveredBy && $this->templateCoverage->coversAll($dir, array_values($themeDirs))) {
+                $coveredBy[] = 'theme: templates';
             }
             $frontNames = $this->frontNames($dir);
             foreach ($fallbackPatterns as $pattern) {

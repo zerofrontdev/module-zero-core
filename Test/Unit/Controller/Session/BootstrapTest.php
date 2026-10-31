@@ -86,4 +86,58 @@ class BootstrapTest extends TestCase
 
         $this->assertSame($json, $controller->execute());
     }
+
+    public function testTheSidebarIsAFragmentOfItsOwnHandle(): void
+    {
+        $layout = $this->createStub(LayoutInterface::class);
+        $layout->method('renderElement')->willReturnCallback(fn ($name) => "<html of $name>");
+        $resultLayout = $this->createMock(ResultLayout::class);
+        $resultLayout->expects($this->once())->method('addHandle')->with('zero_customer_sidebar')->willReturnSelf();
+        $resultLayout->method('getLayout')->willReturn($layout);
+        $layoutFactory = $this->createStub(LayoutFactory::class);
+        $layoutFactory->method('create')->willReturn($resultLayout);
+        $json = $this->createMock(Json::class);
+        $json->expects($this->once())->method('setData')->with($this->callback(function (array $data) {
+            $this->assertEquals((object) ['sidebar' => '<html of zero.customer.sidebar>'], $data['fragments']);
+            return true;
+        }))->willReturnSelf();
+        $factory = $this->createStub(ResultFactory::class);
+        $factory->method('create')->willReturn($json);
+
+        (new Bootstrap($factory, $layoutFactory, $this->request('sidebar'), $this->createStub(HttpResponse::class), $this->formKey()))
+            ->execute();
+    }
+
+    public function testAFailedSidebarIsLeftOutSoTheBrowserDoesNotKeepIt(): void
+    {
+        // Production mode: Layout logs the block's exception and renders ''.
+        $layout = $this->createStub(LayoutInterface::class);
+        $layout->method('renderElement')->willReturnCallback(
+            fn ($name) => $name === 'zero.customer.sidebar' ? '' : ($name === 'zero.customer.welcome' ? '' : "<html of $name>")
+        );
+        $resultLayout = $this->createStub(ResultLayout::class);
+        $resultLayout->method('addHandle')->willReturnSelf();
+        $resultLayout->method('getLayout')->willReturn($layout);
+        $layoutFactory = $this->createStub(LayoutFactory::class);
+        $layoutFactory->method('create')->willReturn($resultLayout);
+        $json = $this->createMock(Json::class);
+        $json->expects($this->once())->method('setData')->with($this->callback(function (array $data) {
+            // An empty welcome is a real answer; an empty sidebar is a failure.
+            $this->assertEquals((object) [
+                'welcome' => '',
+                'cartcounter' => '<html of zero.checkout.cartcounter>',
+            ], $data['fragments']);
+            return true;
+        }))->willReturnSelf();
+        $factory = $this->createStub(ResultFactory::class);
+        $factory->method('create')->willReturn($json);
+
+        (new Bootstrap(
+            $factory,
+            $layoutFactory,
+            $this->request('welcome,cartcounter,sidebar'),
+            $this->createStub(HttpResponse::class),
+            $this->formKey()
+        ))->execute();
+    }
 }

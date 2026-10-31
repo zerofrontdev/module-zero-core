@@ -37,9 +37,14 @@ class StickyAddToCart implements ArgumentInterface
      * Adds to the cart straight from the bar: a product with nothing to
      * choose. Otherwise ("Choose options") the bar takes the shopper to the
      * options (a size, a colour, a required custom option, a bundle's items).
+     * A quote-only product (Zero_QuoteRequest's zero_quote_only) never adds
+     * directly: its page swaps Add to Cart for Request a Quote.
      */
     public function addsDirectly(Product $product): bool
     {
+        if ((bool) $product->getData('zero_quote_only')) {
+            return false;
+        }
         if (!in_array($product->getTypeId(), self::DIRECT_TYPES, true)) {
             return false;
         }

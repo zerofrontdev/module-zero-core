@@ -11,9 +11,11 @@
  * @var \Zero\Core\ViewModel\Directory\CountryRegionProvider $viewModel
  */
 $viewModel = $block->getData('viewModel');
-$countryId = (string) $block->getRequest()->getParam('country_id', 'US');
+$countryId = $block->getRequest()->getParam('country_id', 'US');
+$countryId = is_scalar($countryId) ? (string) $countryId : 'US';
 $regions = $viewModel->getRegionsForCountry($countryId);
-$prefix = (string) $block->getRequest()->getParam('prefix', '');
+$prefix = $block->getRequest()->getParam('prefix', '');
+$prefix = is_scalar($prefix) ? (string) $prefix : '';
 $fieldName = $prefix !== '' ? $prefix . '_region_id' : 'region_id';
 $freeTextFieldName = $prefix !== '' ? $prefix . '_region' : 'region';
 $fieldId = $prefix !== '' ? $prefix . '_region_id' : 'region_id';

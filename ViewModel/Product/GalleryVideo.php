@@ -35,16 +35,16 @@ class GalleryVideo implements ArgumentInterface
         $youtube = null;
         if (in_array($host, ['youtu.be', 'www.youtu.be'], true)) {
             $youtube = trim($path, '/');
-        } elseif (preg_match('/(^|\.)youtube(-nocookie)?\.com$/', $host)) {
+        } elseif (preg_match('/(^|\.)youtube(-nocookie)?\.com\z/', $host)) {
             $youtube = is_string($query['v'] ?? null)
                 ? $query['v']
                 : (preg_match('#^/(embed|shorts|live|v)/([^/?]+)#', $path, $m) ? $m[2] : null);
         }
-        if ($youtube !== null && preg_match('/^[A-Za-z0-9_-]{6,20}$/', $youtube)) {
+        if ($youtube !== null && preg_match('/^[A-Za-z0-9_-]{6,20}\z/', $youtube)) {
             return 'https://www.youtube-nocookie.com/embed/' . $youtube . '?autoplay=1&rel=0&playsinline=1';
         }
 
-        if (preg_match('/(^|\.)vimeo\.com$/', $host) && preg_match('#/(?:video/)?(\d{5,12})(?:/|$)#', $path, $m)) {
+        if (preg_match('/(^|\.)vimeo\.com\z/', $host) && preg_match('#/(?:video/)?(\d{5,12})(?:/|\z)#', $path, $m)) {
             return 'https://player.vimeo.com/video/' . $m[1] . '?autoplay=1';
         }
 

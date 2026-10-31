@@ -44,8 +44,9 @@ class Index implements HttpGetActionInterface
     public function execute()
     {
         $public = $this->scopeConfig->isSetFlag(self::XML_PATH_ENABLED, ScopeInterface::SCOPE_STORE);
+        $token = $this->request->getParam('zero_ui_token', '');
         $signed = $this->previewToken->isValid(
-            (string) $this->request->getParam('zero_ui_token', ''),
+            is_scalar($token) ? (string) $token : '',
             (int) $this->request->getParam('zero_ui_expires', 0),
             (int) $this->storeManager->getStore()->getId()
         );

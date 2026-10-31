@@ -12,6 +12,7 @@ use Magento\Catalog\Helper\Image as ImageHelper;
 use Magento\Catalog\Model\Product\Visibility as ProductVisibility;
 use Magento\Catalog\Model\ResourceModel\Product\CollectionFactory as FulltextCollectionFactory;
 use Magento\Framework\Pricing\PriceCurrencyInterface;
+use Magento\Framework\DataObject\IdentityInterface;
 use Magento\Framework\View\Element\Block\ArgumentInterface;
 use Magento\Search\Helper\Data as SearchHelper;
 use Magento\Search\Model\AutocompleteInterface;
@@ -26,7 +27,7 @@ use Magento\Store\Model\StoreManagerInterface;
  * - getMatchingProducts(): the results page's addSearchFilter() (search
  *   history alone had nothing for new terms), gated by the min query length.
  */
-class SearchSuggest implements ArgumentInterface
+class SearchSuggest implements ArgumentInterface, IdentityInterface
 {
     /**
      * Kept small: a preview, not the results page.

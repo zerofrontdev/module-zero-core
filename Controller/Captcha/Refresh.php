@@ -42,7 +42,8 @@ class Refresh implements PrivateFragmentActionInterface
      */
     public function execute()
     {
-        $formId = (string) $this->request->getParam('form_id');
+        $formId = $this->request->getParam('form_id');
+        $formId = is_scalar($formId) ? (string) $formId : '';
 
         $resultLayout = $this->resultLayoutFactory->create();
         $resultLayout->addDefaultHandle();

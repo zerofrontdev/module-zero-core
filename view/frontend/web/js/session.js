@@ -77,9 +77,10 @@
      * Browser cache of the fragments and form_key, as Luma's customer-data
      * does: most page views need no request. Dropped when
      * private_content_version (renewed on every POST) or mage-cache-sessid
-     * (sign in/out, new session) changes, on another language or store view,
-     * after 20 minutes, or when a fragment is missing. Flash messages are
-     * never cached.
+     * (sign in/out, new session) changes, on another language or store view
+     * (the store cookie, or the bootstrap URL: stores under a path share
+     * localStorage), after 20 minutes, or when a fragment is missing. Flash
+     * messages are never cached.
      */
     var CACHE_KEY = 'zero-private-v1';
     var CACHE_TTL = 20 * 60 * 1000;
@@ -94,7 +95,10 @@
     }
 
     function version() {
-        return [cookie('private_content_version') || '', document.documentElement.lang || '', cookie('store') || ''].join('|');
+        return [
+            cookie('private_content_version') || '', document.documentElement.lang || '', cookie('store') || '',
+            primer.getAttribute('data-zero-session') || ''
+        ].join('|');
     }
 
     function readCache(names) {

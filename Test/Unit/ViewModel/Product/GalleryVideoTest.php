@@ -38,4 +38,16 @@ class GalleryVideoTest extends TestCase
     {
         $this->assertSame($expected, (new GalleryVideo())->embedUrl($url));
     }
+
+    public function testTrailingNewlineIsRejected(): void
+    {
+        // parse_str() decodes %0A: `$` matched before a final newline, \z does not.
+        $video = new GalleryVideo();
+        $this->assertNull($video->embedUrl('https://www.youtube.com/watch?v=abcDEF12345%0A'));
+        $this->assertNull($video->embedUrl('https://youtube-nocookie.com/watch?v=abcDEF12345%0A'));
+        $this->assertSame(
+            'https://www.youtube-nocookie.com/embed/abcDEF12345?autoplay=1&rel=0&playsinline=1',
+            $video->embedUrl('https://www.youtube.com/watch?v=abcDEF12345')
+        );
+    }
 }

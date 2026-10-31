@@ -10,20 +10,25 @@ namespace Zero\Core\ViewModel;
 
 use Magento\Framework\Registry;
 use Magento\Framework\View\Element\Block\ArgumentInterface;
+use Magento\Store\Model\StoreManagerInterface;
 
 /**
  * The viewed product's first category name, for the small eyebrow label above
  * the product title (product/view/page-title.phtml). Same lookup as core's
- * ListProduct (getCategoryCollection()->setPage(1, 1)); the product comes from
- * the registry like core product-page blocks.
+ * ListProduct (getCategoryCollection()->setPage(1, 1)), limited to this
+ * store's tree and active categories (a product shared between websites
+ * otherwise shows another store's or a disabled category); the product comes
+ * from the registry like core product-page blocks.
  */
 class ProductCategoryEyebrow implements ArgumentInterface
 {
     /**
      * @param Registry $registry
+     * @param StoreManagerInterface $storeManager
      */
     public function __construct(
-        private readonly Registry $registry
+        private readonly Registry $registry,
+        private readonly StoreManagerInterface $storeManager
     ) {
     }
 
@@ -42,8 +47,12 @@ class ProductCategoryEyebrow implements ArgumentInterface
          * getCategoryCollection() selects no attributes beyond the ids, so `name`
          * must be added before load().
          */
+        $store = $this->storeManager->getStore();
         $categories = $product->getCategoryCollection()
+            ->setStoreId((int) $store->getId())
             ->addAttributeToSelect('name')
+            ->addAttributeToFilter('is_active', 1)
+            ->addFieldToFilter('path', ['like' => '1/' . (int) $store->getRootCategoryId() . '/%'])
             ->setPage(1, 1)
             ->load();
         if (!$categories->count()) {

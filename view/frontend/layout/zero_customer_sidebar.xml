@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<!--
+/**
+ * Copyright © 2026 Roman Pasichnyk
+ * SPDX-License-Identifier: OSL-3.0 OR AFL-3.0
+ *
+ * The `sidebar` fragment of the session bootstrap: the visitor's Compare
+ * Products and My Wish List (Block\Sidebar).
+ */
+-->
+<layout xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/layout_generic.xsd">
+    <body>
+        <block class="Zero\Core\Block\Sidebar" name="zero.customer.sidebar" cacheable="false"/>
+    </body>
+</layout>
