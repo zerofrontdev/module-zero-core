@@ -1,5 +1,9 @@
 # Changelog: zerofront/module-zero-core
 
+## 1.3.10
+
+- A unit test (`Test/Unit/Di/ObjectDefaultInConstructorTest.php`) that fails when a constructor in a Zero module gives a parameter an object as its default value, the cause of the Zero Mail fault above.
+
 ## 1.3.6
 
 - Google reCAPTCHA (Magento's own ReCaptcha modules) now works on the Zero theme's forms without RequireJS: `view/frontend/web/js/recaptcha.js` drives v2 checkbox, v2 invisible and v3. `bin/magento zero:compat:report` lists the modules the theme covers through templates alone.
